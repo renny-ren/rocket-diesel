@@ -1,9 +1,26 @@
 #[macro_use]
 extern crate rocket;
+#[macro_use]
+extern crate diesel;
+use diesel::{table, Insertable, Queryable};
 use rocket::{fairing::AdHoc, serde::json::Json, State};
+use rocket_sync_db_pools::database;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+table! {
+    blog_posts (id) {
+        id -> Int4,
+        title -> Varchar,
+        body -> Text,
+        published -> Bool,
+    }
+}
+
+#[database("my_db")]
+pub struct Db(diesel::PgConnection);
+
+#[derive(Serialize, Deserialize, Queryable, Debug, Insertable)]
+#[table_name = "blog_posts"]
 struct BlogPost {
     id: i32,
     title: String,
@@ -21,6 +38,7 @@ struct Config {
 fn rocket() -> _ {
     let rocket = rocket::build();
     rocket
+        .attach(Db::fairing())
         .attach(AdHoc::config::<Config>())
         .mount("/", routes![index, get_config])
         .mount(
