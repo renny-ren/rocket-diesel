@@ -2,7 +2,7 @@
 extern crate rocket;
 #[macro_use]
 extern crate diesel;
-use diesel::{table, Insertable, Queryable};
+use diesel::{prelude::*, table, Insertable, Queryable};
 use rocket::{fairing::AdHoc, serde::json::Json, State};
 use rocket_sync_db_pools::database;
 use serde::{Deserialize, Serialize};
@@ -101,6 +101,14 @@ fn get_config(config: &State<Config>) -> String {
 }
 
 #[post("/", data = "<blog_post>")]
-fn create_blog_post(blog_post: Json<BlogPost>) -> Json<BlogPost> {
-    blog_post
+async fn create_blog_post(connection: Db, blog_post: Json<BlogPost>) -> Json<BlogPost> {
+    connection
+        .run(move |c| {
+            diesel::insert_into(blog_posts::table)
+                .values(&blog_post.into_inner())
+                .get_result(c)
+        })
+        .await
+        .map(Json)
+        .expect("boo")
 }
