@@ -78,21 +78,12 @@ fn get_blog_post(id: i32) -> Json<BlogPost> {
 }
 
 #[get("/")]
-fn get_all_blog_posts() -> Json<Vec<BlogPost>> {
-    Json(vec![
-        BlogPost {
-            id: 0,
-            title: "My First Title".to_string(),
-            body: "My First Body".to_string(),
-            published: true,
-        },
-        BlogPost {
-            id: 1,
-            title: "My Second Title".to_string(),
-            body: "My Second Body".to_string(),
-            published: true,
-        },
-    ])
+async fn get_all_blog_posts(connection: Db) -> Json<Vec<BlogPost>> {
+    connection
+        .run(|c| blog_posts::table.load(c))
+        .await
+        .map(Json)
+        .expect("Failed to load blog posts")
 }
 
 #[get("/config")]
